@@ -2,4 +2,4 @@ cred.py
 .venv/
 __pycache__/
 .idea/
-data/
+*.db
