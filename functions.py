@@ -94,3 +94,8 @@ def retrieve_workout(cursor, conds):
         " AND ".join([k + '"' + v + '"' for k, v in conds.items()])
     )
     return cursor.execute(requete).fetchall()
+
+
+def retrieve_col_name(cursor, table):
+    req = """SELECT name FROM PRAGMA_TABLE_INFO('{}');""".format(table)
+    return cursor.execute(req).fetchall()

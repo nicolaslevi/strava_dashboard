@@ -7,9 +7,10 @@ import data.cred as crd
 
 from dash import Dash
 import dash_html_components as html
-import dash_core_components as dcc
+from dash import dcc
 import plotly.express as px
 import pandas as pd
+from datetime import datetime
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -27,7 +28,13 @@ activites_url = "https://www.strava.com/api/v3/athlete/activities"
 activity_url = "https://www.strava.com/api/v3/activities/"
 segment_url = "https://www.strava.com/api/v3/segments/"
 
-payload = crd.payload
+payload = {
+    "client_id": "105271",
+    "client_secret": crd.client_secret,
+    "refresh_token": crd.refresh_token,
+    "grant_type": "refresh_token",
+    "f": "json",
+}
 
 print("Requesting Token...\n")
 res = requests.post(auth_url, data=payload, verify=False)
@@ -85,21 +92,22 @@ conn.commit()
 
 year = "2024-01-01"
 
-data = f.retrieve_workout(cur, {"start_date>= ": year, "sport_type=": "Run"})
+workout_data = f.retrieve_workout(cur, {"start_date>= ": year, "sport_type=": "Run"})
+columns_name = [el[0] for el in f.retrieve_col_name(cur, "activities_infos")]
 
 app = Dash(__name__)
 
 # assume you have a "long-form" data frame
 # see https://plotly.com/python/px-arguments/ for more options
-df = pd.DataFrame(
-    {
-        "Fruit": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
-        "Amount": [4, 1, 2, 2, 4, 5],
-        "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"],
-    }
+df = pd.DataFrame(data=workout_data, columns=columns_name)
+df["semaine"] = (
+    pd.to_datetime(df["start_date"], format="%Y-%m-%d").dt.isocalendar().week
 )
+weekly_dist = df.groupby("semaine").distance.agg("sum") / 1000
 
-fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group")
+fig = px.bar(
+    weekly_dist,
+)
 
 app.layout = html.Div(
     children=[
