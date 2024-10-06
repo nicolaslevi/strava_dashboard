@@ -1,45 +1,230 @@
-from dash import Dash
-import dash_html_components as html
-import dash_core_components as dcc
-import plotly.express as px
-import pandas as pd
+from dash import html, dcc
+import dash_bootstrap_components as dbc
 
-app = Dash(__name__)
 
-# assume you have a "long-form" data frame
-# see https://plotly.com/python/px-arguments/ for more options
-df = pd.DataFrame({
-    "Fruit": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
-    "Amount": [4, 1, 2, 2, 4, 5],
-    "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
-})
+template = html.Div(
+    [
+        html.Div(
+            [
+                html.H1(
+                    [
+                        html.Span("Welcome"),
+                        html.Br(),
+                        html.Span("to my beautiful dashboard!"),
+                    ]
+                ),
+                html.P(
+                    "This dashboard prototype shows how to create an effective layout."
+                ),
+            ],
+            style={"vertical-alignment": "top", "height": 260},
+        ),
+        html.Div(
+            [
+                html.Div(
+                    dbc.RadioItems(
+                        className="btn-group",
+                        inputClassName="btn-check",
+                        labelClassName="btn btn-outline-light",
+                        labelCheckedClassName="btn btn-light",
+                        options=[
+                            {"label": "Graph", "value": 1},
+                            {"label": "Table", "value": 2},
+                        ],
+                        value=1,
+                        style={"width": "100%"},
+                    ),
+                    style={"width": 206},
+                ),
+                html.Div(
+                    dbc.Button("About", className="btn btn-info", n_clicks=0),
+                    style={"width": 104},
+                ),
+            ],
+            style={"margin-left": 15, "margin-right": 15, "display": "flex"},
+        ),
+        html.Div(
+            [
+                html.Div(
+                    [
+                        html.H2("Unclearable Dropdown:"),
+                        dcc.Dropdown(
+                            options=[
+                                {"label": "Option A", "value": 1},
+                                {"label": "Option B", "value": 2},
+                                {"label": "Option C", "value": 3},
+                            ],
+                            value=1,
+                            clearable=False,
+                            optionHeight=40,
+                            className="customDropdown",
+                        ),
+                    ]
+                ),
+                html.Div(
+                    [
+                        html.H2("Unclearable Dropdown:"),
+                        dcc.Dropdown(
+                            options=[
+                                {"label": "Option A", "value": 1},
+                                {"label": "Option B", "value": 2},
+                                {"label": "Option C", "value": 3},
+                            ],
+                            value=2,
+                            clearable=False,
+                            optionHeight=40,
+                            className="customDropdown",
+                        ),
+                    ]
+                ),
+                html.Div(
+                    [
+                        html.H2("Clearable Dropdown:"),
+                        dcc.Dropdown(
+                            options=[
+                                {"label": "Option A", "value": 1},
+                                {"label": "Option B", "value": 2},
+                                {"label": "Option C", "value": 3},
+                            ],
+                            clearable=True,
+                            optionHeight=40,
+                            className="customDropdown",
+                        ),
+                    ]
+                ),
+            ],
+            style={"margin-left": 15, "margin-right": 15, "margin-top": 30},
+        ),
+        html.Div(
+            html.Img(
+                src="assets/image.svg",
+                style={
+                    "margin-left": 15,
+                    "margin-right": 15,
+                    "margin-top": 30,
+                    "width": 310,
+                },
+            )
+        ),
+    ],
+    style={"width": 340, "margin-left": 35, "margin-top": 35, "margin-bottom": 35},
+)
 
-fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group")
 
-app.layout = html.Div(children=[
-    html.H1(children='Hello Dash'),
-
-    html.Div(children='''
-        Dash: A web application framework for your data.
-    '''),
-
-    dcc.Graph(
-        id='example-graph',
-        figure=fig
-    )
-])
-
-if __name__ == '__main__':
+"""layout = dbc.Container([
+    html.Div([
+        html.Div([
+            html.H1([
+                html.Span("Welcome"),
+                html.Br(),
+                html.Span("to my beautiful dashboard!")
+            ]),
+            html.
+            P("This dashboard prototype shows how to create an effective layout."
+              )
+        ],
+                 style={"vertical-alignment": "top", "height": 260}),
+        html.Div([
+            html.Div(
+                dbc.RadioItems(
+                    className='btn-group',
+                    inputClassName='btn-check',
+                    labelClassName="btn btn-outline-light",
+                    labelCheckedClassName="btn btn-light",
+                    options=[
+                        {"label": "Graph", "value": 1},
+                        {"label": "Table", "value": 2}
+                    ],
+                    value=1,
+                    style={'width': '100%'}
+                ), style={'width': 206}
+            ),
+            html.Div(
+                dbc.Button(
+                    "About",
+                    className="btn btn-info",
+                    n_clicks=0
+                ), style={'width': 104})
+        ], style={'margin-left': 15, 'margin-right': 15, 'display': 'flex'}),
+        html.Div([
+            html.Div([
+                html.H2('Unclearable Dropdown:'),
+                dcc.Dropdown(
+                    options=[
+                        {'label': 'Option A', 'value': 1},
+                        {'label': 'Option B', 'value': 2},
+                        {'label': 'Option C', 'value': 3}
+                    ],
+                    value=1,
+                    clearable=False,
+                    optionHeight=40,
+                    className='customDropdown'
+                )
+            ]),
+            html.Div([
+                html.H2('Unclearable Dropdown:'),
+                dcc.Dropdown(
+                    options=[
+                        {'label': 'Option A', 'value': 1},
+                        {'label': 'Option B', 'value': 2},
+                        {'label': 'Option C', 'value': 3}
+                    ],
+                    value=2,
+                    clearable=False,
+                    optionHeight=40,
+                    className='customDropdown'
+                )
+            ]),
+            html.Div([
+                html.H2('Clearable Dropdown:'),
+                dcc.Dropdown(
+                    options=[
+                        {'label': 'Option A', 'value': 1},
+                        {'label': 'Option B', 'value': 2},
+                        {'label': 'Option C', 'value': 3}
+                    ],
+                    clearable=True,
+                    optionHeight=40,
+                    className='customDropdown'
+                )
+            ])
+        ], style={'margin-left': 15, 'margin-right': 15, 'margin-top': 30}),
+        html.Div(
+            html.Img(src='assets/image.svg',
+                     style={'margin-left': 15, 'margin-right': 15, 'margin-top': 30, 'width': 310})
+        )
+    ], style={
+        'width': 340,
+        'margin-left': 35,
+        'margin-top': 35,
+        'margin-bottom': 35
+    }),
+    html.Div(
+        [
+            html.Div(
+                dcc.Graph(
+                    figure=fig
+                ),
+                     style={'width': 790}),
+            html.Div([
+                html.H2('Output 1:'),
+                html.Div(className='Output'),
+                html.H2('Output 2:'),
+                html.Div(html.H3("Selected Value"), className='Output')
+            ], style={'width': 198})
+        ],
+        style={
+            'width': 990,
+            'margin-top': 35,
+            'margin-right': 35,
+            'margin-bottom': 35,
+            'display': 'flex'
+        })
+],
+                           fluid=True,
+                           style={'display': 'flex'},
+                           className='dashboard-container')
+"""
+"""if __name__ == "__main__":
     app.run_server(debug=True)
-
-
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-data = np.array([[1, 2, 3, 4],
-                [10, 10, 20, 10]])
-
-df = pd.Dataframe(data.T, columns=['a', 'b'])
-
-df.plot(kind='bar', x='a', y='b')
-plt.show()
+"""

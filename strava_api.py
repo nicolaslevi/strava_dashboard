@@ -4,11 +4,14 @@ import requests
 import urllib3
 import functions as f
 import data.cred as crd
+import app as ap
 
+import dash_bootstrap_components as dbc
 from dash import Dash
-import dash_html_components as html
+from dash import html
 from dash import dcc
 import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
 from datetime import datetime
 
@@ -91,11 +94,9 @@ while not upTodate:
 conn.commit()
 
 year = "2024-01-01"
-
 workout_data = f.retrieve_workout(cur, {"start_date>= ": year, "sport_type=": "Run"})
 columns_name = [el[0] for el in f.retrieve_col_name(cur, "activities_infos")]
 
-app = Dash(__name__)
 
 # assume you have a "long-form" data frame
 # see https://plotly.com/python/px-arguments/ for more options
@@ -105,21 +106,52 @@ df["semaine"] = (
 )
 weekly_dist = df.groupby("semaine").distance.agg("sum") / 1000
 
-fig = px.bar(
-    weekly_dist,
+app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
+
+fig = go.Figure(go.Bar(x=weekly_dist.index, y=weekly_dist, marker_line_width=0))
+fig.update_yaxes(ticklabelposition="inside top", title=None, title_font_color="red")
+fig.update_layout(
+    plot_bgcolor="#ffffff",
+    width=790,
+    height=730,
+    xaxis_visible=False,
+    yaxis=dict(gridcolor="#525252"),
+    yaxis_visible=True,
+    showlegend=False,
+    margin=dict(l=0, r=0, t=0, b=0),
 )
 
-app.layout = html.Div(
-    children=[
-        html.H1(children="Hello Dash"),
+
+app.layout = dbc.Container(
+    [
+        ap.template,
         html.Div(
-            children="""
-        Dash: A web application framework for your data.
-    """
+            [
+                html.Div(dcc.Graph(figure=fig), style={"width": 790}),
+                html.Div(
+                    [
+                        html.H2("Output 1:"),
+                        html.Div(className="Output"),
+                        html.H2("Output 2:"),
+                        html.Div(html.H3("Selected Value"), className="Output"),
+                    ],
+                    style={"width": 198},
+                ),
+            ],
+            style={
+                "width": 990,
+                "margin-top": 35,
+                "margin-right": 35,
+                "margin-bottom": 35,
+                "display": "flex",
+            },
         ),
-        dcc.Graph(id="example-graph", figure=fig),
-    ]
+    ],
+    fluid=True,
+    style={"display": "flex"},
+    className="dashboard-container",
 )
+
 
 if __name__ == "__main__":
     app.run_server(debug=True)
