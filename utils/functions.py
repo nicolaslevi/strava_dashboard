@@ -1,15 +1,16 @@
+import utils.params as p
 import requests
 import urllib3
 import time
 
 
-def is_unknown_activity(activity_id, cursor):
+def is_unknown_activity(activity_id):
     activity = """ SELECT id FROM activities_infos WHERE id={}; """.format(activity_id)
-    res = cursor.execute(activity).fetchall()
+    res = p.db_cursor.execute(activity).fetchall()
     return len(res) == 0
 
 
-def is_unknown_segment(segment_id, cursor):
+def is_unknown_segment(segment_id):
     """
     Vérifie si l'id du segment est présent dans la BDD
     :param segment_id:
@@ -17,7 +18,7 @@ def is_unknown_segment(segment_id, cursor):
     :return: True si le segment n'est pas dans la BDD
     """
     rode_segment = """ SELECT id FROM segments_infos WHERE id={}; """.format(segment_id)
-    res = cursor.execute(rode_segment).fetchall()
+    res = p.db_cursor.execute(rode_segment).fetchall()
     return len(res) == 0
 
 
@@ -51,31 +52,31 @@ def get_value(json, cle, typ):
     return val
 
 
-def create_segment(segment_infos, cursor):
+def create_segment(segment_infos):
     requete = """INSERT INTO segments_infos (%s )
                      VALUES (%s);""" % (
         ", ".join(list(segment_infos.keys())),
         ", ".join(list(segment_infos.values())),
     )
-    cursor.execute(requete)
+    p.db_cursor.execute(requete)
 
 
-def add_perf(perf_infos, cursor):
+def add_perf(perf_infos):
     requete = """INSERT INTO segments_performances (%s )
                      VALUES (%s);""" % (
         ", ".join(list(perf_infos.keys())),
         ", ".join(list(perf_infos.values())),
     )
-    cursor.execute(requete)
+    p.db_cursor.execute(requete)
 
 
-def add_activity(activity_infos, cursor):
+def add_activity(activity_infos):
     requete = """INSERT INTO activities_infos (%s )
                      VALUES (%s);""" % (
         ", ".join(list(activity_infos.keys())),
         ", ".join(list(activity_infos.values())),
     )
-    cursor.execute(requete)
+    p.db_cursor.execute(requete)
 
 
 def request(url, headers, params={}):
@@ -89,13 +90,13 @@ def request(url, headers, params={}):
     return res
 
 
-def retrieve_workout(cursor, conds):
+def retrieve_workout(conds):
     requete = """SELECT * FROM  activities_infos WHERE %s;""" % (
         " AND ".join([k + '"' + v + '"' for k, v in conds.items()])
     )
-    return cursor.execute(requete).fetchall()
+    return p.db_cursor.execute(requete).fetchall()
 
 
-def retrieve_col_name(cursor, table):
+def retrieve_col_name(table):
     req = """SELECT name FROM PRAGMA_TABLE_INFO('{}');""".format(table)
-    return cursor.execute(req).fetchall()
+    return p.db_cursor.execute(req).fetchall()
