@@ -1,24 +1,25 @@
-import dash
-import dash_core_components as dcc
-import dash_html_components as html
+import pandas as pd
+import plotly.graph_objects as go
+from dash import Dash, dcc, html, Input, Output
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output
-import plotly.express as px
 
-# Create a sample figure for the graph
-df = (
-    px.data.gapminder()
-    .query("year == 2007")
-    .sort_values("pop", ascending=False)
-    .head(10)
-)
-fig = px.bar(df, x="country", y="pop", hover_data=["pop"], labels={"pop": "Population"})
 
-x_axis_name = fig.layout.xaxis.title.text
-y_axis_name = fig.layout.yaxis.title.text
+# Mock function for get_data (you can replace it with your actual function)
+def get_data(sport, duree):
+    # Here, you would retrieve data based on the selected sport and duration
+    # This is just dummy data for illustration purposes
+    data = {
+        "semaine": ["2023-10-02", "2023-10-09", "2023-10-16", "2023-10-23"],
+        "distance": [5, 10, 15, 7] if sport == 1 else [3, 8, 13, 6],
+    }
+    return pd.DataFrame(data)
 
-# Initialize the Dash app
-app = dash.Dash(__name__)
+
+# Dropdown options (example)
+type_activite = [{"label": "Running", "value": 1}, {"label": "Cycling", "value": 2}]
+
+# Initialize the app
+app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 
 # Layout definition
 app.layout = dbc.Container(
@@ -27,13 +28,7 @@ app.layout = dbc.Container(
             [
                 html.Div(
                     [
-                        html.H1(
-                            [
-                                html.Span("Welcome"),
-                                html.Br(),
-                                html.Span("to my beautiful dashboard!"),
-                            ]
-                        ),
+                        html.H1(["Welcome", html.Br(), "to my beautiful dashboard!"]),
                         html.P(
                             "This dashboard prototype shows how to create an effective layout."
                         ),
@@ -68,48 +63,30 @@ app.layout = dbc.Container(
                     [
                         html.Div(
                             [
-                                html.H2("Unclearable Dropdown:"),
+                                html.H2("Sport Type:"),
                                 dcc.Dropdown(
-                                    options=[
-                                        {"label": "Option A", "value": 1},
-                                        {"label": "Option B", "value": 2},
-                                        {"label": "Option C", "value": 3},
-                                    ],
+                                    options=type_activite,
                                     value=1,
                                     clearable=False,
                                     optionHeight=40,
                                     className="customDropdown",
+                                    id="sport_type",
                                 ),
                             ]
                         ),
                         html.Div(
                             [
-                                html.H2("Unclearable Dropdown:"),
+                                html.H2("Duration Type:"),
                                 dcc.Dropdown(
                                     options=[
-                                        {"label": "Option A", "value": 1},
-                                        {"label": "Option B", "value": 2},
-                                        {"label": "Option C", "value": 3},
+                                        {"label": "Semaine", "value": "semaine_date"},
+                                        {"label": "Mois", "value": "mois"},
                                     ],
-                                    value=2,
+                                    value="semaine_date",
                                     clearable=False,
                                     optionHeight=40,
                                     className="customDropdown",
-                                ),
-                            ]
-                        ),
-                        html.Div(
-                            [
-                                html.H2("Clearable Dropdown:"),
-                                dcc.Dropdown(
-                                    options=[
-                                        {"label": "Option A", "value": 1},
-                                        {"label": "Option B", "value": 2},
-                                        {"label": "Option C", "value": 3},
-                                    ],
-                                    clearable=True,
-                                    optionHeight=40,
-                                    className="customDropdown",
+                                    id="duree_type",
                                 ),
                             ]
                         ),
@@ -138,21 +115,21 @@ app.layout = dbc.Container(
         html.Div(
             [
                 html.Div(
-                    dcc.Graph(id="graph", figure=fig),  # ID for the graph component
+                    dcc.Graph(id="graph"),  # ID for the graph component
                     style={"width": 790},
                 ),
                 html.Div(
                     [
-                        html.H2(f"{x_axis_name}:"),
+                        html.H2(id="x_axis_label"),  # Dynamic X axis label
                         html.Div(
-                            html.H3("Selected Value", id="hover-output1"),
+                            html.H3("Selected Value", id="click-output1"),
                             className="Output",
-                        ),  # Div for the x value (country)
-                        html.H2(f"{y_axis_name}:"),
+                        ),  # Div for the x value
+                        html.H2(id="y_axis_label"),  # Dynamic Y axis label
                         html.Div(
-                            html.H3("Selected Value", id="hover-output2"),
+                            html.H3("Selected Value", id="click-output2"),
                             className="Output",
-                        ),  # H3 for the y value (population)
+                        ),  # H3 for the y value
                     ],
                     style={"width": 198},
                 ),
@@ -172,28 +149,62 @@ app.layout = dbc.Container(
 )
 
 
-# Define the callback function to update both output elements
+# Callback to update the graph based on dropdown selections
 @app.callback(
     [
-        Output(
-            "hover-output1", "children"
-        ),  # Update the div under Output 1 for the x value (country)
-        Output("hover-output2", "children"),
-    ],  # Update the h3 for the y value (population)
-    Input("graph", "hoverData"),  # Get the hover data from the graph
+        Output("graph", "figure"),
+        Output("x_axis_label", "children"),
+        Output("y_axis_label", "children"),
+    ],
+    [Input("sport_type", "value"), Input("duree_type", "value")],
 )
-def update_hover_data(hoverData):
-    if hoverData is None:
-        return "Hover over a bar", "Selected Value"  # Default text if no hover data
+def update_graph(sport, duree):
+    # Get the data based on selected sport and duration
+    weekly_dist = get_data(sport, duree)
+    weekly_df = weekly_dist.reset_index()
 
-    # Extract x (country) and y (population) values from the hoverData
-    country = hoverData["points"][0]["x"]
-    population = hoverData["points"][0]["y"]
+    # Create the figure
+    fig = go.Figure(
+        go.Bar(
+            x=weekly_df["semaine"],
+            y=weekly_df["distance"],
+            hovertemplate="<b>Semaine:</b> %{x}<br>"
+            + "<b>Dist:</b> %{y}<br>"
+            + "<extra></extra>",
+        )
+    )
+    fig.update_yaxes(ticklabelposition="inside top", title=None, title_font_color="red")
+    fig.update_layout(
+        plot_bgcolor="#ffffff",
+        width=790,
+        height=730,
+        xaxis_visible=False,
+        yaxis=dict(gridcolor="#525252"),
+        yaxis_visible=True,
+        showlegend=False,
+        margin=dict(l=0, r=0, t=0, b=0),
+    )
 
-    # Return the country to output-1 div and population to hover-output h3
-    return f"{country}", f"{population}"
+    # Return updated figure and axis labels
+    return fig, "Semaine:", "Distance:"
 
 
-# Run the app
+# Callback to display clicked values from the graph
+@app.callback(
+    [Output("click-output1", "children"), Output("click-output2", "children")],
+    [Input("graph", "clickData")],
+)
+def display_click_data(clickData):
+    if clickData is None:
+        return "No bar clicked", "No bar clicked"
+
+    # Get the clicked x and y values
+    x_value = clickData["points"][0]["x"]
+    y_value = clickData["points"][0]["y"]
+
+    # Update the output with the clicked data
+    return x_value, y_value
+
+
 if __name__ == "__main__":
     app.run_server(debug=True)

@@ -6,6 +6,7 @@ from datetime import datetime
 
 import plotly.graph_objects as go
 from dash import html, dcc, Dash
+
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 
@@ -13,22 +14,44 @@ import strava_api as sa
 
 # nb_ajout = sa.update_db()
 
-
 year = "2024-01-01"
-workout_data = f.retrieve_workout({"start_date>= ": year, "sport_type=": "Run"})
+# workout_data = f.retrieve_workout({"start_date>= ": year, "sport_type=": "Run"})
+workout_data = f.retrieve_workout()
 columns_name = [el[0] for el in f.retrieve_col_name("activities_infos")]
 
 
 df = pd.DataFrame(data=workout_data, columns=columns_name)
-df["semaine"] = (
-    pd.to_datetime(df["start_date"], format="%Y-%m-%d").dt.isocalendar().week
+df["mois"] = pd.to_datetime(df["start_date"], format="%Y-%m-%d").dt.strftime("%B %Y")
+df["semaine_date"] = (
+    pd.to_datetime(df["start_date"], format="%Y-%m-%d")
+    .dt.to_period("W")
+    .apply(lambda r: r.start_time)
 )
-weekly_dist = df.groupby("semaine").distance.agg("sum") / 1000
-weekly_df = weekly_dist.reset_index()
 
+
+type_activite_df = (
+    df[["id", "sport_type"]]
+    .groupby("sport_type")
+    .count()
+    .reset_index()
+    .to_dict("records")
+)
+
+type_activite = [
+    {
+        "label": "" + el["sport_type"] + " (" + str(el["id"]) + ")",
+        "value": el["sport_type"],
+    }
+    for el in type_activite_df
+]
+
+# weekly_dist = get_data(agregat, unite, sport_type)
+# weekly_df = weekly_dist.reset_index()
+
+# weekly_dist = get_data(sport, duree)
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 
-fig = go.Figure(
+"""fig = go.Figure(
     go.Bar(
         x=weekly_df["semaine"],
         y=weekly_df["distance"],
@@ -51,7 +74,7 @@ fig.update_layout(
 
 
 x_axis_name = fig.layout.xaxis.title.text
-y_axis_name = fig.layout.yaxis.title.text
+y_axis_name = fig.layout.yaxis.title.text"""
 
 # Layout definition
 app.layout = dbc.Container(
@@ -103,15 +126,12 @@ app.layout = dbc.Container(
                             [
                                 html.H2("Unclearable Dropdown:"),
                                 dcc.Dropdown(
-                                    options=[
-                                        {"label": "Option A", "value": 1},
-                                        {"label": "Option B", "value": 2},
-                                        {"label": "Option C", "value": 3},
-                                    ],
-                                    value=1,
+                                    options=type_activite,
                                     clearable=False,
                                     optionHeight=40,
                                     className="customDropdown",
+                                    id="sport_type",
+                                    value=type_activite[0]["value"],
                                 ),
                             ]
                         ),
@@ -120,14 +140,14 @@ app.layout = dbc.Container(
                                 html.H2("Unclearable Dropdown:"),
                                 dcc.Dropdown(
                                     options=[
-                                        {"label": "Option A", "value": 1},
-                                        {"label": "Option B", "value": 2},
-                                        {"label": "Option C", "value": 3},
+                                        {"label": "Semaine", "value": "semaine_date"},
+                                        {"label": "Mois", "value": "mois"},
                                     ],
-                                    value=2,
                                     clearable=False,
                                     optionHeight=40,
                                     className="customDropdown",
+                                    id="agreg_type",
+                                    value="semaine_date",
                                 ),
                             ]
                         ),
@@ -136,13 +156,14 @@ app.layout = dbc.Container(
                                 html.H2("Clearable Dropdown:"),
                                 dcc.Dropdown(
                                     options=[
-                                        {"label": "Option A", "value": 1},
-                                        {"label": "Option B", "value": 2},
-                                        {"label": "Option C", "value": 3},
+                                        {"label": "Distance", "value": "distance"},
+                                        {"label": "Duree", "value": "duree"},
                                     ],
                                     clearable=True,
                                     optionHeight=40,
                                     className="customDropdown",
+                                    id="duree_type",
+                                    value="distance",
                                 ),
                             ]
                         ),
@@ -171,21 +192,21 @@ app.layout = dbc.Container(
         html.Div(
             [
                 html.Div(
-                    dcc.Graph(id="graph", figure=fig),  # ID for the graph component
+                    dcc.Graph(id="graph"),  # ID for the graph component
                     style={"width": 790},
                 ),
                 html.Div(
                     [
-                        html.H2(f"{x_axis_name}:"),
+                        html.H2(id="x_axis_label"),  # Dynamic X axis label
                         html.Div(
                             html.H3("Selected Value", id="click-output1"),
                             className="Output",
-                        ),  # Div for the x value (country)
-                        html.H2(f"{y_axis_name}:"),
+                        ),  # Div for the x value
+                        html.H2(id="y_axis_label"),  # Dynamic Y axis label
                         html.Div(
                             html.H3("Selected Value", id="click-output2"),
                             className="Output",
-                        ),  # H3 for the y value (population)
+                        ),  # H3 for the y value
                     ],
                     style={"width": 198},
                 ),
@@ -221,7 +242,51 @@ def display_click_data(clickData):
     y_value = clickData["points"][0]["y"]
 
     # Update the output with the clicked data
-    return x_value, y_value
+    return (x_value, y_value)
+
+
+# Callback to update the graph based on dropdown selections
+@app.callback(
+    [
+        Output("graph", "figure"),
+        Output("x_axis_label", "children"),
+        Output("y_axis_label", "children"),
+    ],
+    [
+        Input("sport_type", "value"),
+        Input("duree_type", "value"),
+        Input("agreg_type", "value"),
+    ],
+)
+def update_graph(sport, duree, agreg):
+    # Get the data based on selected sport and duration
+    weekly_dist = df.loc[df["sport_type"] == sport].groupby(agreg).sum(duree)
+    weekly_df = weekly_dist.reset_index()
+
+    # Create the figure
+    fig = go.Figure(
+        go.Bar(
+            x=weekly_df[agreg],
+            y=weekly_df[duree],
+            hovertemplate="<b>Semaine:</b> %{x}<br>"
+            + "<b>Dist:</b> %{y}<br>"
+            + "<extra></extra>",
+        )
+    )
+    fig.update_yaxes(ticklabelposition="inside top", title=None, title_font_color="red")
+    fig.update_layout(
+        plot_bgcolor="#ffffff",
+        width=790,
+        height=730,
+        xaxis_visible=False,
+        yaxis=dict(gridcolor="#525252"),
+        yaxis_visible=True,
+        showlegend=False,
+        margin=dict(l=0, r=0, t=0, b=0),
+    )
+
+    # Return updated figure and axis labels
+    return fig, "Semaine:", "Distance:"
 
 
 if __name__ == "__main__":

@@ -90,10 +90,13 @@ def request(url, headers, params={}):
     return res
 
 
-def retrieve_workout(conds):
-    requete = """SELECT * FROM  activities_infos WHERE %s;""" % (
-        " AND ".join([k + '"' + v + '"' for k, v in conds.items()])
-    )
+def retrieve_workout(conds=dict()):
+    if len(conds) == 0:
+        requete = """SELECT * FROM  activities_infos;"""
+    else:
+        requete = """SELECT * FROM  activities_infos WHERE %s;""" % (
+            " AND ".join([k + '"' + v + '"' for k, v in conds.items()])
+        )
     return p.db_cursor.execute(requete).fetchall()
 
 
