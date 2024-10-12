@@ -124,46 +124,76 @@ app.layout = dbc.Container(
                     [
                         html.Div(
                             [
-                                html.H2("Unclearable Dropdown:"),
+                                html.Label(
+                                    "Semaine",
+                                    style={"margin-right": "10px", "width": "155px"},
+                                ),  # Label gauche
+                                html.Div(
+                                    [
+                                        dbc.Switch(
+                                            id="agreg_type",
+                                            label="",
+                                            value=True,  # Valeur par défaut (semaine)
+                                            className="customSwitch",
+                                            style={
+                                                "margin-left": "10px",
+                                                "margin-right": "10px",
+                                            },
+                                        )
+                                    ],
+                                ),
+                                html.Label(
+                                    "Mois",
+                                    style={
+                                        "margin-left": "10px",
+                                    },
+                                ),  # Label droit
+                            ],
+                            style={
+                                "display": "flex",
+                                "justify-content": "space-between",
+                                "width": "310px",
+                            },  # Centering and width control
+                        ),
+                        html.Div(
+                            [
+                                html.Label(
+                                    "Durée",
+                                    style={"margin-right": "10px", "width": "155px"},
+                                ),  # Label gauche
+                                html.Div(
+                                    [
+                                        dbc.Switch(
+                                            id="duree_type",
+                                            label="",
+                                            value=True,  # Valeur par défaut (duree)
+                                            className="customSwitch",
+                                            style={
+                                                "margin-left": "10px",
+                                                "margin-right": "10px",
+                                            },
+                                        )
+                                    ]
+                                ),
+                                html.Label(
+                                    "Distance", style={"margin-left": "10px"}
+                                ),  # Label droit
+                            ],
+                            style={
+                                "display": "flex",
+                                "justify-content": "space-between",
+                                "width": "310px",
+                            },  # Centering and width control
+                        ),
+                        html.Div(
+                            [
+                                html.H2("Type d'activités :"),
                                 dcc.Dropdown(
                                     options=type_activite,
-                                    clearable=False,
-                                    optionHeight=40,
-                                    className="customDropdown",
-                                    id="sport_type",
-                                    value=type_activite[0]["value"],
-                                ),
-                            ]
-                        ),
-                        html.Div(
-                            [
-                                html.H2("Unclearable Dropdown:"),
-                                dcc.Dropdown(
-                                    options=[
-                                        {"label": "Semaine", "value": "semaine_date"},
-                                        {"label": "Mois", "value": "mois"},
-                                    ],
-                                    clearable=False,
-                                    optionHeight=40,
-                                    className="customDropdown",
-                                    id="agreg_type",
-                                    value="semaine_date",
-                                ),
-                            ]
-                        ),
-                        html.Div(
-                            [
-                                html.H2("Clearable Dropdown:"),
-                                dcc.Dropdown(
-                                    options=[
-                                        {"label": "Distance", "value": "distance"},
-                                        {"label": "Duree", "value": "duree"},
-                                    ],
                                     clearable=True,
                                     optionHeight=40,
                                     className="customDropdown",
-                                    id="duree_type",
-                                    value="distance",
+                                    id="sport_type",
                                 ),
                             ]
                         ),
@@ -260,7 +290,20 @@ def display_click_data(clickData):
 )
 def update_graph(sport, duree, agreg):
     # Get the data based on selected sport and duration
-    weekly_dist = df.loc[df["sport_type"] == sport].groupby(agreg).sum(duree)
+    if agreg:
+        agreg = "mois"
+    else:
+        agreg = "semaine_date"
+
+    if duree:
+        duree = "duree"
+    else:
+        duree = "distance"
+
+    if sport is None:
+        weekly_dist = df.groupby(agreg).sum(duree)
+    else:
+        weekly_dist = df.loc[df["sport_type"] == sport].groupby(agreg).sum(duree)
     weekly_df = weekly_dist.reset_index()
 
     # Create the figure
