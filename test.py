@@ -6,8 +6,6 @@ import dash_bootstrap_components as dbc
 
 # Mock function for get_data (you can replace it with your actual function)
 def get_data(sport, duree):
-    # Here, you would retrieve data based on the selected sport and duration
-    # This is just dummy data for illustration purposes
     data = {
         "semaine": ["2023-10-02", "2023-10-09", "2023-10-16", "2023-10-23"],
         "distance": [5, 10, 15, 7] if sport == 1 else [3, 8, 13, 6],
@@ -15,13 +13,13 @@ def get_data(sport, duree):
     return pd.DataFrame(data)
 
 
-# Dropdown options (example)
+# Options pour le type d'activité (exemple)
 type_activite = [{"label": "Running", "value": 1}, {"label": "Cycling", "value": 2}]
 
-# Initialize the app
+# Initialisation de l'application
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 
-# Layout definition
+# Layout de l'application
 app.layout = dbc.Container(
     [
         html.Div(
@@ -61,34 +59,75 @@ app.layout = dbc.Container(
                 ),
                 html.Div(
                     [
+                        # Interrupteur pour sélectionner le type de sport
                         html.Div(
                             [
-                                html.H2("Sport Type:"),
-                                dcc.Dropdown(
-                                    options=type_activite,
-                                    value=1,
-                                    clearable=False,
-                                    optionHeight=40,
-                                    className="customDropdown",
-                                    id="sport_type",
-                                ),
-                            ]
-                        ),
-                        html.Div(
-                            [
-                                html.H2("Duration Type:"),
-                                dcc.Dropdown(
-                                    options=[
-                                        {"label": "Semaine", "value": "semaine_date"},
-                                        {"label": "Mois", "value": "mois"},
+                                html.H2("Type d'activité:"),
+                                html.Div(
+                                    [
+                                        html.Label(
+                                            "Running", style={"margin-right": "10px"}
+                                        ),  # Label gauche
+                                        dbc.Switch(
+                                            id="sport_type_switch",
+                                            label="",
+                                            value=True,  # Valeur par défaut
+                                            className="customSwitch",
+                                            style={
+                                                "margin-left": "10px",
+                                                "margin-right": "10px",
+                                            },
+                                        ),
+                                        html.Label(
+                                            "Cycling", style={"margin-left": "10px"}
+                                        ),  # Label droit
                                     ],
-                                    value="semaine_date",
-                                    clearable=False,
-                                    optionHeight=40,
-                                    className="customDropdown",
-                                    id="duree_type",
+                                    style={
+                                        "display": "flex",
+                                        "align-items": "center",
+                                        "justify-content": "space-between",
+                                        "width": "200px",
+                                    },  # Centering and width control
                                 ),
-                            ]
+                            ],
+                            style={"margin-bottom": "20px", "text-align": "center"},
+                        ),
+                        # Interrupteur pour sélectionner la durée
+                        html.Div(
+                            [
+                                html.H2("Durée:"),
+                                html.Div(
+                                    [
+                                        html.Label(
+                                            "Semaine", style={"margin-right": "10px"}
+                                        ),  # Label gauche
+                                        html.Div(
+                                            [
+                                                dbc.Switch(
+                                                    id="duree_type_switch",
+                                                    label="",
+                                                    value=True,  # Valeur par défaut (semaine)
+                                                    className="customSwitch",
+                                                    style={
+                                                        "margin-left": "10px",
+                                                        "margin-right": "10px",
+                                                    },
+                                                )
+                                            ]
+                                        ),
+                                        html.Label(
+                                            "Mois", style={"margin-left": "10px"}
+                                        ),  # Label droit
+                                    ],
+                                    style={
+                                        "display": "flex",
+                                        "align-items": "center",
+                                        "justify-content": "space-between",
+                                        "width": "200px",
+                                    },  # Centering and width control
+                                ),
+                            ],
+                            style={"margin-bottom": "20px", "text-align": "center"},
                         ),
                     ],
                     style={"margin-left": 15, "margin-right": 15, "margin-top": 30},
@@ -115,21 +154,21 @@ app.layout = dbc.Container(
         html.Div(
             [
                 html.Div(
-                    dcc.Graph(id="graph"),  # ID for the graph component
+                    dcc.Graph(id="graph"),  # ID du composant graphique
                     style={"width": 790},
                 ),
                 html.Div(
                     [
-                        html.H2(id="x_axis_label"),  # Dynamic X axis label
+                        html.H2(id="x_axis_label"),  # Label dynamique pour l'axe X
                         html.Div(
                             html.H3("Selected Value", id="click-output1"),
                             className="Output",
-                        ),  # Div for the x value
-                        html.H2(id="y_axis_label"),  # Dynamic Y axis label
+                        ),  # Affichage pour la valeur X
+                        html.H2(id="y_axis_label"),  # Label dynamique pour l'axe Y
                         html.Div(
                             html.H3("Selected Value", id="click-output2"),
                             className="Output",
-                        ),  # H3 for the y value
+                        ),  # Affichage pour la valeur Y
                     ],
                     style={"width": 198},
                 ),
@@ -149,21 +188,25 @@ app.layout = dbc.Container(
 )
 
 
-# Callback to update the graph based on dropdown selections
+# Callback pour mettre à jour le graphique en fonction des interrupteurs
 @app.callback(
     [
         Output("graph", "figure"),
         Output("x_axis_label", "children"),
         Output("y_axis_label", "children"),
     ],
-    [Input("sport_type", "value"), Input("duree_type", "value")],
+    [Input("sport_type_switch", "value"), Input("duree_type_switch", "value")],
 )
-def update_graph(sport, duree):
-    # Get the data based on selected sport and duration
+def update_graph(sport_switch, duree_switch):
+    # Convertir la valeur des interrupteurs en options correspondantes
+    sport = 1 if sport_switch else 2  # 1 = Running, 2 = Cycling
+    duree = "semaine_date" if duree_switch else "mois"
+
+    # Obtenir les données basées sur le sport et la durée
     weekly_dist = get_data(sport, duree)
     weekly_df = weekly_dist.reset_index()
 
-    # Create the figure
+    # Créer le graphique
     fig = go.Figure(
         go.Bar(
             x=weekly_df["semaine"],
@@ -185,11 +228,11 @@ def update_graph(sport, duree):
         margin=dict(l=0, r=0, t=0, b=0),
     )
 
-    # Return updated figure and axis labels
+    # Retourner le graphique et les labels d'axes
     return fig, "Semaine:", "Distance:"
 
 
-# Callback to display clicked values from the graph
+# Callback pour afficher les données cliquées sur le graphique
 @app.callback(
     [Output("click-output1", "children"), Output("click-output2", "children")],
     [Input("graph", "clickData")],
@@ -198,11 +241,11 @@ def display_click_data(clickData):
     if clickData is None:
         return "No bar clicked", "No bar clicked"
 
-    # Get the clicked x and y values
+    # Récupérer les valeurs X et Y cliquées
     x_value = clickData["points"][0]["x"]
     y_value = clickData["points"][0]["y"]
 
-    # Update the output with the clicked data
+    # Mettre à jour l'affichage avec les données cliquées
     return x_value, y_value
 
 
