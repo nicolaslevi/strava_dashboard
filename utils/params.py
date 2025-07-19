@@ -14,6 +14,7 @@ auth_url = "https://www.strava.com/oauth/token"
 activites_url = "https://www.strava.com/api/v3/athlete/activities"
 activity_url = "https://www.strava.com/api/v3/activities/"
 segment_url = "https://www.strava.com/api/v3/segments/"
+gear_url = f"https://www.strava.com/api/v3/gear/"
 
 payload = {
     "client_id": "105271",

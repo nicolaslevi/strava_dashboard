@@ -103,3 +103,40 @@ def retrieve_workout(conds=dict()):
 def retrieve_col_name(table):
     req = """SELECT name FROM PRAGMA_TABLE_INFO('{}');""".format(table)
     return p.db_cursor.execute(req).fetchall()
+
+
+def get_gear(gear_id):
+    requete = f"""SELECT name FROM gear_infos WHERE id="{gear_id}";"""
+
+    gear = p.db_cursor.execute(requete).fetchall()
+
+    if len(gear) == 0:
+        gear = None
+    else:
+        gear = formate_str(gear[0][0])
+
+    return gear
+
+
+def add_gear(header, gear_id):
+    if gear_id is not None:
+        try:
+            response = requests.get(p.gear_url + gear_id, headers=header)
+            response.raise_for_status()
+            gear_data = response.json()
+
+            name = gear_data.get("name", "Inconnu")
+
+            insert_query = """
+            INSERT INTO gear_infos (id, name) VALUES (?, ?)
+            """
+            p.db_cursor.execute(insert_query, (gear_id, name))
+            p.db_connector.commit()
+
+            return formate_str(name)
+
+        except requests.RequestException as e:
+            print(f"Erreur lors de la récupération du matériel {gear_id} : {e}")
+            return "Inconnu"
+    else:
+        return "null"

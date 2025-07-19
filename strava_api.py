@@ -5,6 +5,10 @@ import requests
 import urllib3
 
 
+def retrieve_activities():
+    a
+
+
 def update_db():
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
